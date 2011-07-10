@@ -2,9 +2,12 @@
 
 set -e 
 
+SOURCES="/Library /System /bin /etc /mach_kernel /private /sbin /tmp /usr /var /etc /opt /Volumes/Macintosh/Library /Volumes/Macintosh/System /Volumes/Macintosh/Users /Volumes/Macintosh/Applications"
+
+SRCHOST=`hostname -fs`
 snapshot_host=baader
-snapshot_dir=/volume1/homes/chris/Backup
 snapshot_user=chris
+snapshot_dir=/volume1/homes/chris/Backup/$SRCHOST
 ssh_user=$snapshot_user@$snapshot_host
 
 ping -o $snapshot_host > /dev/null || {
@@ -13,8 +16,10 @@ ping -o $snapshot_host > /dev/null || {
 }
 
 ssh $ssh_user "test -d $snapshot_dir" || {
-  echo "ERROR: can't see $ssh_user:$snapshot_dir" >&2
-  exit 2
+  ssh $ssh_user "mkdir -p $snapshot_dir" || {
+  	echo "ERROR: can't see $ssh_user:$snapshot_dir" >&2
+  	exit 2
+  }
 }
   
 snapshot_id=`date "+%Y-%m-%d-%H%M%S"`
@@ -26,7 +31,7 @@ snapshot_id=`date "+%Y-%m-%d-%H%M%S"`
   --partial \
   --link-dest ../current/ \
   --relative \
-  /Users/chris/Downloads /Users/chris/bin /Users/chris/Library \
+  $SOURCES \
   $ssh_user:$snapshot_dir/in-progress/
 
 ssh $ssh_user "cd $snapshot_dir; rm -fr $snapshot_id; mv in-progress $snapshot_id; rm -f current; ln -s $snapshot_id $snapshot_dir/current"
