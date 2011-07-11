@@ -34,6 +34,8 @@ To update to a never version you need to download the current version and compil
 * Now a folder for every client is created in the backup directory
 * rsync is now running as root
 * Put some documentation in the code and startet the README and changelog
+* Cleaned up the variable names
+* Added some error handling (must run as root, host unrechable, write logfile)
 
 ### 2011-07-10
 

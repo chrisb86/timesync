@@ -1,17 +1,20 @@
 #! /bin/sh
 
-set -e
-set -u
+#set -e
+#set -u
 
 ## Which folders do you want to Backup? (Without trailing "/")
 # SOURCES="/Library /System /bin /etc /mach_kernel /private /sbin /tmp /usr /var /etc /opt /Volumes/Macintosh/Library /Volumes/Macintosh/System /Volumes/Macintosh/Users /Volumes/Macintosh/Applications"
-SOURCES="/Volumes/Macintosh/Users/chris/Downloads"
+SOURCES="/Volumes/Macintosh/Users/chris"
 
 # Any non-valuable stuff to exclude by name/location (seperated by ",")?
-EXCLUDE='.DS_Store,/.chris/,./elli/,LastPass/pipes/,log/,.log,/tmp/*,/Network/*,/cores/*,*/.Trash,/afs/*,/automount/*,/private/tmp/*,/private/var/run/*,/private/var/spool/postfix/*,/private/var/vm/*,.Spotlight-*/'
+EXCLUDE='.DS_Store,/.chris/,./elli/,LastPass/pipes/,log/,.log,/tmp/*,/Network/*,/cores/*,*/.Trash,*/.Trashes,/afs/*,/automount/*,/private/tmp/*,/private/var/run/*,/private/var/spool/postfix/*,/private/var/vm/*,.Spotlight-*/'
 
 ## Your server login ("username@server")
 SSH_USER="chris@baader"
+
+## Where should I write the errorlog?
+ERRORLOG="/Users/chris/backup-errors.log"
 
 ## What's your path for Backups on the Server? (i.e. "/home/username/backups"
 SRV_PATH="/volume1/homes/chris/Backup"
@@ -25,37 +28,69 @@ RSYNC="/usr/local/bin/rsync"
 ## Get the hostname of the client
 SRCHOST=`hostname -fs`
 
-## Add cleint name to the backup path
+## Add client name to the backup path
 SRV_PATH="${SRV_PATH}/${SRCHOST}/"
-
-echo $SRV_PATH
 
 ## Split SSH_USER in username and host
 SRV_USER=${SSH_USER%@*}
 SRV_HOST=${SSH_USER#*@}
 
-## The name for the snapshots
-SNAPSHOT_ID=`date "+%Y-%m-%d-%H%M%S"`
+# Get the date and time
+DATE=`date "+%Y-%m-%d-%H%M%S"`
 
-# Is your server online?
-ping -o $SRV_HOST > /dev/null || {
-  echo "WARNING: can't see $SRV_HOST -- skipping backup"
-  exit 1
-}
+## Check if we're running as root
+
+if [[ $EUID -ne 0 ]]; then
+   echo "ERROR: timesync must be run as root. Skipping backup."
+   exit 1
+fi
+
+## Check, if another backup is in progress and stop if it is
+PROCS=`ps -A -o "pid=,command="`
+MYNAME="$0"
+MYBASENAME=`basename $MYNAME`
+MYPID=$$
+ 
+# The next line works like so:
+# * take the process list (for all users),
+# * filter *in* processes named like this script (making sure we're on word boundaries),
+# * filter *out* (-v) the one that *is* this script (by PID), and finally
+# * filter *out* the grep commands themselves.
+ 
+MERUNNING=`echo "$PROCS" | grep -E -e "\b$MYBASENAME\b" \
+  | grep -E -v "\b$MYPID\b" | grep -v grep`
+ 
+## Then, if anything's left (i.e. MERUNNING isn't a zero-length string...)
+ 
+if [ ! -z "$MERUNNING" ]; then
+  echo "WARNING: Another backup seems to be in progress. Ignoring scheduled backup"
+  exit 2
+fi 
+
+# Is the server online?
+SRV_DOWN=`ping -c 3 $SRV_HOST >&1 | grep -c "100.0%"`
+
+if [ "$SRV_DOWN" -eq 1 ]; then
+  echo "ERROR: $SRV_HOST is unreacheble. Skipping Backup."
+  exit 3
+fi
 
 # Are we able to create and write to the backup folder?
 ssh $SSH_USER "test -d $SRV_PATH" || {
   ssh $SSH_USER "mkdir -p $SRV_PATH" || {
-  	echo "ERROR: can't see $SSH_USER:$SRV_PATH" >&2
-  	exit 2
+  	echo "ERROR: Can't access $SSH_USER:$SRV_PATH. Skipping backup."
+  	exit 4
   }
 }
+
+## The name for the snapshots
+SNAPSHOT_ID=$DATE
 
 ## Modify the excludes list for rsync
 EXPEXCLUDES=`eval "echo --exclude={$EXCLUDE} "`
 
 ## Do it!
-sudo $RSYNC -v --archive --verbose \
+sudo $RSYNC --archive \
   --delete --delete-excluded \
   $EXPEXCLUDES \
   --numeric-ids \
@@ -64,7 +99,8 @@ sudo $RSYNC -v --archive --verbose \
   --link-dest ../Latest/ \
   --relative \
   $SOURCES \
-  $SSH_USER:$SRV_PATH/in.Progress/
+  $SSH_USER:$SRV_PATH/in.Progress/ \
+  2>&1 >> $ERRORLOG
   
 ## Finish backup and get some cleaning done
 ssh $SSH_USER "cd $SRV_PATH; rm -fr $SNAPSHOT_ID; mv in.Progress $SNAPSHOT_ID; rm -f Latest; ln -s $SNAPSHOT_ID $SRV_PATH/Latest"
