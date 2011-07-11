@@ -1,3 +1,10 @@
+# timesync
+
+timesync aims to be a replacement for Apple's _Time Machine_ and should run on all unix-like systems.
+
+It's based on _rsync_ and does backups only to remote hosts via SSH at the moment.
+
+It creates snapshots and uses symbolic links so that you only have to transfer the changed files since the last backup. It works really fast but you still have a full backup of your fileset in every snapshot.
 
 ## Updating rsync on OS X
 
@@ -35,10 +42,7 @@ To update to a never version you need to download the current version and compil
 * rsync is now running as root
 * Put some documentation in the code and startet the README and changelog
 * Cleaned up the variable names
-<<<<<<< Updated upstream
 * Added some error handling (must run as root, host unrechable, write logfile)
-=======
->>>>>>> Stashed changes
 
 ### 2011-07-10
 
