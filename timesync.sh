@@ -41,7 +41,7 @@ DATE=`date "+%Y-%m-%d-%H%M%S"`
 ## Check if we're running as root
 
 if [[ $EUID -ne 0 ]]; then
-   echo "ERROR: timesync must be run as root. Skipping backup."
+   echo "ERROR: Script must be run as root. Skipping backup."
    exit 1
 fi
 
@@ -90,7 +90,7 @@ SNAPSHOT_ID=$DATE
 EXPEXCLUDES=`eval "echo --exclude={$EXCLUDE} "`
 
 ## Do it!
-sudo $RSYNC --archive \
+RUN_RSYNC=`sudo $RSYNC -v --archive \
   --delete --delete-excluded \
   $EXPEXCLUDES \
   --numeric-ids \
@@ -99,8 +99,13 @@ sudo $RSYNC --archive \
   --link-dest ../Latest/ \
   --relative \
   $SOURCES \
-  $SSH_USER:$SRV_PATH/in.Progress/ \
-  2>&1 >> $ERRORLOG
-  
-## Finish backup and get some cleaning done
-ssh $SSH_USER "cd $SRV_PATH; rm -fr $SNAPSHOT_ID; mv in.Progress $SNAPSHOT_ID; rm -f Latest; ln -s $SNAPSHOT_ID $SRV_PATH/Latest"
+  ${SSH_USER}:${SRV_PATH}in.Progress/ \
+  2>&1 > $ERRORLOG`
+
+if [ -z "$RUN_RSYNC" ]; then
+	## Finish backup and get some cleaning done
+	ssh $SSH_USER "cd $SRV_PATH; rm -fr $SNAPSHOT_ID; mv in.Progress $SNAPSHOT_ID; rm -f Latest; ln -s $SNAPSHOT_ID $SRV_PATH/Latest"
+else
+	echo "There were some errors while backing up $SRV_HOST. See $ERRORLOG for further information."
+	exit 5
+fi

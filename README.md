@@ -12,8 +12,8 @@ The rsync version that's delivered with OS X is barely old and doesn''t work pro
 
 To update to a never version you need to download the current version and compile it by hand.
 
-1. Install Xcode (from your OS X DVD or the AppStore)
-2. Open a Terminal
+- Install Xcode (from your OS X DVD or the AppStore)
+- Open a Terminal
 
 ```shell
 cd ~/Downloads/
@@ -30,8 +30,8 @@ make
 sudo make install
 ```
 	
-3. Your newly updated binary is located in /usr/local/bin/rsync.
-4. Paste this path to the config section of timesync
+- Your newly updated binary is located in /usr/local/bin/rsync.
+- Paste this path to the config section of timesync
 
 
 ## Changelog
