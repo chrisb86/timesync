@@ -1,8 +1,8 @@
 # timesync
 
-timesync aims to be a replacement for Apple's _Time Machine_ and should run on all unix-like systems.
+timesync aims to be a replacement for Apple's [_Time Machine_] (http://www.apple.com/de/macosx/apps/) and should run on all unix-like systems.
 
-It's based on _rsync_ and does backups only to remote hosts via SSH at the moment.
+It's based on [_rsync_] (http://www.samba.org/ftp/rsync/rsync.html) and does backups only to remote hosts via SSH at the moment.
 
 It creates snapshots and uses symbolic links so that you only have to transfer the changed files since the last backup. It works really fast but you still have a full backup of your fileset in every snapshot.
 
@@ -15,20 +15,20 @@ To update to a never version you need to download the current version and compil
 1. Install Xcode (from your OS X DVD or the AppStore)
 2. Open a Terminal
 
-	```shell
-	cd ~/Downloads/
-    curl -O http://rsync.samba.org/ftp/rsync/src/rsync-3.0.8.tar.gz
-    curl -O http://rsync.samba.org/ftp/rsync/src/rsync-patches-3.0.8.tar.gz
-    tar -xzvf rsync-3.0.8.tar.gz
-	tar -xzvf rsync-patches-3.0.8.tar.gz
-	cd rsync-3.0.8
-	patch -p1 <patches/fileflags.diff
-	patch -p1 <patches/crtimes.diff
-	./prepare-source
-	./configure
-	make
-	sudo make install
-	```
+```shell
+cd ~/Downloads/
+curl -O http://rsync.samba.org/ftp/rsync/src/rsync-3.0.8.tar.gz
+curl -O http://rsync.samba.org/ftp/rsync/src/rsync-patches-3.0.8.tar.gz
+tar -xzvf rsync-3.0.8.tar.gz
+tar -xzvf rsync-patches-3.0.8.tar.gz
+cd rsync-3.0.8
+patch -p1 <patches/fileflags.diff
+patch -p1 <patches/crtimes.diff
+./prepare-source
+./configure
+make
+sudo make install
+```
 	
 3. Your newly updated binary is located in /usr/local/bin/rsync.
 4. Paste this path to the config section of timesync
