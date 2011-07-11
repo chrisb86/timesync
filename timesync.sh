@@ -1,19 +1,20 @@
 #! /bin/sh
 
-set -e 
+set -e
+set -u
 
 ## Which folders do you want to Backup? (Without trailing "/")
 # SOURCES="/Library /System /bin /etc /mach_kernel /private /sbin /tmp /usr /var /etc /opt /Volumes/Macintosh/Library /Volumes/Macintosh/System /Volumes/Macintosh/Users /Volumes/Macintosh/Applications"
-SOURCES="/Volumes/Macintosh/Users/chris"
+SOURCES="/Volumes/Macintosh/Users/chris/Downloads"
+
+# Any non-valuable stuff to exclude by name/location (seperated by ",")?
+EXCLUDE='.DS_Store,/.chris/,./elli/,LastPass/pipes/,log/,.log,/tmp/*,/Network/*,/cores/*,*/.Trash,/afs/*,/automount/*,/private/tmp/*,/private/var/run/*,/private/var/spool/postfix/*,/private/var/vm/*,.Spotlight-*/'
 
 ## Your server login ("username@server")
 SSH_USER="chris@baader"
 
-## What's your path for Backups on your Server? (i.e. "/home/username/backups"
-SNAPSHOT_DIR="/volume1/homes/chris/Backup"
-
-## Path to your rsync exclude file
-EXCLUDE_FILE="/Users/chris/bin/backup_excludes.txt"
+## What's your path for Backups on the Server? (i.e. "/home/username/backups"
+SRV_PATH="/volume1/homes/chris/Backup"
 
 ## The path to your rsync binary (usually "/usr/bin/rsync")
 RSYNC="/usr/local/bin/rsync"
@@ -25,40 +26,45 @@ RSYNC="/usr/local/bin/rsync"
 SRCHOST=`hostname -fs`
 
 ## Add cleint name to the backup path
-SNAPSHOT_DIR="${SNAPSHOT_DIR}/${SRCHOST}/"
+SRV_PATH="${SRV_PATH}/${SRCHOST}/"
+
+echo $SRV_PATH
 
 ## Split SSH_USER in username and host
-SNAPSHOT_USER=${SSH_USER%@*}
-SNAPSHOT_HOST=${SSH_USER#*@}
+SRV_USER=${SSH_USER%@*}
+SRV_HOST=${SSH_USER#*@}
 
 ## The name for the snapshots
 SNAPSHOT_ID=`date "+%Y-%m-%d-%H%M%S"`
 
 # Is your server online?
-ping -o $SNAPSHOT_HOST > /dev/null || {
-  echo "WARNING: can't see $SNAPSHOT_HOST -- skipping backup"
+ping -o $SRV_HOST > /dev/null || {
+  echo "WARNING: can't see $SRV_HOST -- skipping backup"
   exit 1
 }
 
 # Are we able to create and write to the backup folder?
-ssh $SSH_USER "test -d $SNAPSHOT_DIR" || {
-  ssh $SSH_USER "mkdir -p $SNAPSHOT_DIR" || {
-  	echo "ERROR: can't see $SSH_USER:$SNAPSHOT_DIR" >&2
+ssh $SSH_USER "test -d $SRV_PATH" || {
+  ssh $SSH_USER "mkdir -p $SRV_PATH" || {
+  	echo "ERROR: can't see $SSH_USER:$SRV_PATH" >&2
   	exit 2
   }
 }
 
+## Modify the excludes list for rsync
+EXPEXCLUDES=`eval "echo --exclude={$EXCLUDE} "`
+
 ## Do it!
 sudo $RSYNC -v --archive --verbose \
   --delete --delete-excluded \
-  --exclude-from $EXCLUDE_FILE \
+  $EXPEXCLUDES \
   --numeric-ids \
   --one-file-system \
   --partial \
-  --link-dest ../current/ \
+  --link-dest ../Latest/ \
   --relative \
   $SOURCES \
-  $SSH_USER:$SNAPSHOT_DIR/in-progress/
+  $SSH_USER:$SRV_PATH/in.Progress/
   
 ## Finish backup and get some cleaning done
-ssh $SSH_USER "cd $SNAPSHOT_DIR; rm -fr $SNAPSHOT_ID; mv in-progress $SNAPSHOT_ID; rm -f current; ln -s $SNAPSHOT_ID $SNAPSHOT_DIR/current"
+ssh $SSH_USER "cd $SRV_PATH; rm -fr $SNAPSHOT_ID; mv in.Progress $SNAPSHOT_ID; rm -f Latest; ln -s $SNAPSHOT_ID $SRV_PATH/Latest"
