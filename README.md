@@ -14,7 +14,8 @@ To update to a never version you need to download the current version and compil
 
 1. Install Xcode (from your OS X DVD or the AppStore)
 2. Open a Terminal
-	
+
+	```shell
 	cd ~/Downloads/
     curl -O http://rsync.samba.org/ftp/rsync/src/rsync-3.0.8.tar.gz
     curl -O http://rsync.samba.org/ftp/rsync/src/rsync-patches-3.0.8.tar.gz
@@ -27,6 +28,7 @@ To update to a never version you need to download the current version and compil
 	./configure
 	make
 	sudo make install
+	```
 	
 3. Your newly updated binary is located in /usr/local/bin/rsync.
 4. Paste this path to the config section of timesync
