@@ -35,7 +35,10 @@ To update to a never version you need to download the current version and compil
 * rsync is now running as root
 * Put some documentation in the code and startet the README and changelog
 * Cleaned up the variable names
+<<<<<<< Updated upstream
 * Added some error handling (must run as root, host unrechable, write logfile)
+=======
+>>>>>>> Stashed changes
 
 ### 2011-07-10
 
